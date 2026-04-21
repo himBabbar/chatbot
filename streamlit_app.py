@@ -42,7 +42,7 @@ def fetch_available_models(host):
 
 
 def extract_pdf_text(uploaded_file):
-    """Extract all text from every page using PyMuPDF. Returns (text, page_count, extracted_pages)."""
+    """Extract all text from every page using PyMuPDF. Returns (text, total_pages, extracted_pages)."""
     pdf_bytes = uploaded_file.read()
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     total_pages = len(doc)
@@ -83,7 +83,7 @@ def required_num_ctx(extra_chars: int = 0) -> int:
     return min(ctx, 131072)
 
 
-# ── Sidebar ──────────────────────────────────────────────────────────────────
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     # Model selector
     st.header("Model")
@@ -181,6 +181,24 @@ with st.sidebar:
         st.caption("Actual counts will appear after your first message.")
 
     st.markdown("---")
+    # Export chat
+    if st.session_state.messages:
+        def build_export() -> str:
+            lines = [f"# Chat Export — {st.session_state.selected_model}\n"]
+            if st.session_state.system_prompt.strip():
+                lines.append(f"**System prompt:** {st.session_state.system_prompt.strip()}\n\n---\n")
+            for msg in st.session_state.messages:
+                role = "You" if msg["role"] == "user" else "Assistant"
+                lines.append(f"### {role}\n{msg['content']}\n")
+            return "\n".join(lines)
+
+        st.download_button(
+            label="⬇️ Export chat as Markdown",
+            data=build_export(),
+            file_name="chat_export.md",
+            mime="text/markdown",
+        )
+
     if st.button("🗑️ Clear chat history"):
         st.session_state.messages = []
         st.session_state.token_stats = None
